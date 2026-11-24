@@ -24,12 +24,47 @@ In production payment systems, unbounded idempotency state presents serious oper
 **Implementation:** Each IdempotencyRecord is persisted with a LocalDateTime createdAt timestamp. When a request arrives, the system checks if the existing record is older than 24 hours (LocalDateTime.now().minusHours(24)). If expired, the record is evicted from the map, and the new request is processed as a fresh transaction.
 
 ## 4. Setup Instructions
-Prerequisites: JDK 17 and Maven (or use the included mvnw wrapper). No database or external service is required.
-git clone <your-forked-repo-url>
-cd backend/Idempotency-gateway
-Run the application (starts on port 8080)
-./mvnw spring-boot:run
-The server is ready when the console prints Tomcat started on port 8080.
+
+### Prerequisites
+Ensure you have the following installed on your machine:
+*   **JDK 17** (or higher)
+*   **Maven 3.6+** (Optional — the project includes the Maven Wrapper `mvnw`)
+*   No database or external services are required. The application uses an in-memory store.
+
+### Installation & Running
+
+**1. Clone the repository:**
+git clone https://github.com/YOUR_USERNAME/AmaliTech-DEG-Project-based-challenges.git
+cd AmaliTech-DEG-Project-based-challenges/backend/Idempotency-gateway
+
+ **2. Run the application:**
+You can start the server using the included Maven wrapper. This automatically downloads the correct Maven version if you don't have it installed globally.
+
+
+# On Windows (PowerShell/CMD):
+mvnw.cmd spring-boot:run
+The server is ready when you see the console output:
+
+Tomcat started on port 8080 (http) with context path 
+Started IdempotencyGatewayApplication in X.XXX seconds
+**3. Build an executable JAR (Optional):**
+If you prefer to build and run a standalone JAR file:
+
+./mvnw clean package
+java -jar target/idempotency-gateway-0.0.1-SNAPSHOT.jar
+Running Tests
+(If you have written unit or integration tests)
+
+./mvnw test
+Verifying the Application is Running
+Once the server is up, open a new terminal and run the following curl command. You should receive a 200 OK or 201 Created response with the body {"status":"Charged 100 GHS"} after a 2-second delay.
+
+curl -i -X POST http://localhost:8080/process-payment \
+  -H "Idempotency-Key: setup-test-001" \
+  -H "Content-Type: application/json" \
+  -d '{"amount":100,"currency":"GHS"}'
+text
+
 
 ## 5. API Documentation
 
@@ -101,3 +136,20 @@ curl -i -X POST http://localhost:8080/process-payment \
   -H "Content-Type: application/json" \
   -d '{"amount":500,"currency":"GHS"}'
 
+  ## Project Structure 
+  
+src/
+├── main/java/com/finsafe/idempotencygateway/
+│   ├── controller/
+│   │   └── PaymentController.java       # REST endpoints, header & error handling
+│   ├── service/
+│   │   ├── IdempotencyService.java      # Core business logic & TTL checks
+│   │   ├── InFlightManager.java         # CompletableFuture concurrency locks
+│   │   └── InMemoryStore.java           # ConcurrentHashMap storage
+│   ├── util/
+│   │   └── PayloadHasher.java           # Canonical JSON sorting & SHA-256
+│   ├── model/
+│   │   ├── IdempotencyRecord.java       # Data model for cached transactions
+│   │   └── PaymentRequest.java          # Request DTO
+│   └── IdempotencyGatewayApplication.java
+└── test/java/...                        # Integration tests
